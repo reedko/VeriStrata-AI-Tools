@@ -1,0 +1,16 @@
+.field-label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+
+.key-input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #27505a;
+  border-radius: 8px;
+  background: #041319;
+  color: #d8f4f4;
+  font: 13px "SFMono-Regular", Consolas, monospace;
+}

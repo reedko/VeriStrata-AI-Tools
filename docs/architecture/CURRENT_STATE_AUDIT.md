@@ -61,6 +61,7 @@ Every operation uses bearer API-key authentication. The canonical current docume
 | Deterministic corpus diagnostics | MISSING → implemented | Exact/near duplicate and domain-concentration checks; no model call required. |
 | Separate persistence | MISSING → implemented | Optional `veristrata_ai_tools` schema; no cross-database joins/FKs and no automatic migration. |
 | Tools Lab | MISSING → implemented | Nine-page React/Vite developer console plus local API. |
+| Hosted client authentication | MISSING → implemented | Separate hashed `ait_` keys with revocation, expiry, quotas, rate limiting and usage audit. Upstream `vsk_` remains private. |
 | Full source-aware extraction | MODIFY / BLOCKED | Must extend registered-source consumption in the canonical preparation pipeline. |
 | Provenance/transmission graph | MISSING / BLOCKED | Needs canonical occurrence, time, retrieval and transformation records; similarity alone is insufficient. |
 | Foreign-influence attribution | BLOCKED by design | Requires independent evidence and analyst judgment; must never be inferred from recurrence or language alone. |

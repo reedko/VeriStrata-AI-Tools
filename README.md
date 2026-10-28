@@ -13,6 +13,7 @@ An open-source developer toolkit for evidence-aware AI workflows built on the ex
 - MCP v2 stdio server for use by any compatible model host.
 - React/Vite Lab with Dashboard, Tool Explorer, Document Screening, Narrative Trace, Corpus Assessment, Evidence Explorer, Evaluation Lab, Swagger API Explorer, and Diagnostics.
 - Optional `veristrata_ai_tools` MariaDB schema. It has no cross-database joins or foreign keys.
+- Separate `ait_` client access keys with hashing, revocation, quotas, rate limiting and usage auditing.
 
 ## Quick start
 
@@ -33,7 +34,7 @@ VERISTRATA_API_KEY=vsk_replace_me \
 npm run mcp
 ```
 
-The `vsk_` key stays in the server/MCP process and is never sent to the browser or included in structured tool results.
+The `vsk_` key stays in the server/MCP process and is never sent to the browser or included in structured tool results. Hosted API clients use a separate `ait_` key; see [ACCESS_KEYS.md](docs/ACCESS_KEYS.md).
 
 ## Repository map
 

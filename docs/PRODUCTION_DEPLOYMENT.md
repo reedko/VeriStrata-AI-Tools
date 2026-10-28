@@ -13,8 +13,8 @@ Internet -> TLS reverse proxy -> static Lab + public /swagger
 
 - Keep `.env` on the VPS, outside Git, readable only by the service account.
 - Bind Node to `127.0.0.1`; expose only the TLS reverse proxy.
-- Publicly serve `/swagger/`, static assets, `/api/health`, and optionally the deterministic preflight endpoint.
-- Protect live tool execution, Partner reads, recent assessments, and detailed diagnostics with Cloudflare Access, OAuth, or reverse-proxy basic auth. Do not rely on an unguessable URL.
+- Publicly serve `/swagger/`, static assets, `/api/health`, and the tool catalog.
+- Require application-validated `ait_` keys for deterministic preflight, live tool execution, Partner reads, recent assessments, and detailed diagnostics. Cloudflare Access or OAuth can add a human-access layer.
 - Add per-IP/user rate limits and retain request-size limits.
 - Never expose `VERISTRATA_API_KEY` in Vite variables, browser runtime config, logs, or GitHub Actions.
 - Use a separate least-privilege MariaDB user restricted to `veristrata_ai_tools.*`.
@@ -29,4 +29,4 @@ TOOLS_LAB_PORT=8787 node --import tsx apps/tools-lab/server/index.ts
 
 For a durable service, use systemd or an existing process manager with `Restart=on-failure`, a dedicated Unix user, and an environment file outside the checkout. Serve `apps/tools-lab/dist/client` as static files and proxy `/swagger` and `/api` to `127.0.0.1:8787`.
 
-The checked-in `deploy/` profile targets the current Nginx/PM2 VPS layout at `ai-tools.veristrata.ai` on localhost port `8791`. It defaults to a public read-only preview: Swagger and deterministic evaluation are available, while Partner-backed reads/execution return `403` until collaborator authentication is configured.
+The checked-in `deploy/` profile targets the current Nginx/PM2 VPS layout at `ai-tools.veristrata.ai` on localhost port `8791`. Production authentication fails closed: only Swagger, health and the catalog are anonymous; privileged APIs require an active `ait_` key and configured access-key database.
