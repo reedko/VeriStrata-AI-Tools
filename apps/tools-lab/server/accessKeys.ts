@@ -61,6 +61,19 @@ async function findIdentity(rawKey: string): Promise<AccessIdentity | null> {
   return row ? { keyId: row.key_id, name: row.name, requestsPerMinute: row.requests_per_minute, monthlyQuota: row.monthly_quota, requestsThisMonth: Number(row.requests_this_month) } : null;
 }
 
+async function reserveMonthlyQuota(identity: AccessIdentity) {
+  const month = new Date().toISOString().slice(0, 7);
+  const [result] = await pool().execute(
+    `UPDATE ai_tool_access_keys SET
+      requests_this_month = CASE WHEN usage_month = ? THEN requests_this_month + 1 ELSE 1 END,
+      usage_month = ?, last_used_at = CURRENT_TIMESTAMP
+     WHERE key_id = ? AND status = 'active'
+       AND (monthly_quota IS NULL OR CASE WHEN usage_month = ? THEN requests_this_month ELSE 0 END < monthly_quota)`,
+    [month, month, identity.keyId, month],
+  );
+  return (result as { affectedRows: number }).affectedRows === 1;
+}
+
 function rateAllowed(identity: AccessIdentity) {
   const now = Date.now();
   const current = rateWindows.get(identity.keyId);
@@ -74,16 +87,9 @@ function rateAllowed(identity: AccessIdentity) {
 }
 
 async function recordUsage(identity: AccessIdentity, req: Request, statusCode: number, durationMs: number) {
-  const month = new Date().toISOString().slice(0, 7);
   await pool().execute(
     "INSERT INTO ai_tool_usage_events (key_id, method, path, status_code, duration_ms, request_id) VALUES (?, ?, ?, ?, ?, ?)",
     [identity.keyId, req.method, req.path, statusCode, durationMs, req.headers["x-request-id"] || null],
-  );
-  await pool().execute(
-    `UPDATE ai_tool_access_keys SET last_used_at = CURRENT_TIMESTAMP,
-      requests_this_month = CASE WHEN usage_month = ? THEN requests_this_month + 1 ELSE 1 END,
-      usage_month = ? WHERE key_id = ?`,
-    [month, month, identity.keyId],
   );
 }
 
@@ -95,8 +101,8 @@ export async function requireAiToolsKey(req: Request, res: Response, next: NextF
     if (!rawKey.startsWith("ait_")) return res.status(401).json({ error: { code: "AI_TOOLS_KEY_REQUIRED", message: "Provide an AI Tools key as Bearer ait_…" } });
     const identity = await findIdentity(rawKey);
     if (!identity) return res.status(401).json({ error: { code: "AI_TOOLS_KEY_INVALID", message: "The AI Tools key is invalid, expired, or revoked" } });
-    if (identity.monthlyQuota !== null && identity.requestsThisMonth >= identity.monthlyQuota) return res.status(429).json({ error: { code: "MONTHLY_QUOTA_EXCEEDED", message: "Monthly request quota exceeded" } });
     if (!rateAllowed(identity)) return res.status(429).json({ error: { code: "RATE_LIMIT_EXCEEDED", message: "Per-minute request limit exceeded" } });
+    if (!(await reserveMonthlyQuota(identity))) return res.status(429).json({ error: { code: "MONTHLY_QUOTA_EXCEEDED", message: "Monthly request quota exceeded" } });
     (req as Request & { accessIdentity?: AccessIdentity }).accessIdentity = identity;
     const started = Date.now();
     res.on("finish", () => { void recordUsage(identity, req, res.statusCode, Date.now() - started).catch((error) => console.error("usage audit failed", error)); });
