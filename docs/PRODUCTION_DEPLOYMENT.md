@@ -29,4 +29,4 @@ TOOLS_LAB_PORT=8787 node --import tsx apps/tools-lab/server/index.ts
 
 For a durable service, use systemd or an existing process manager with `Restart=on-failure`, a dedicated Unix user, and an environment file outside the checkout. Serve `apps/tools-lab/dist/client` as static files and proxy `/swagger` and `/api` to `127.0.0.1:8787`.
 
-Before deployment, choose the hostname and access-control policy. DNS, TLS, service installation, and reverse-proxy changes are intentionally operator-specific and are not performed by this repository.
+The checked-in `deploy/` profile targets the current Nginx/PM2 VPS layout at `ai-tools.veristrata.ai` on localhost port `8791`. It defaults to a public read-only preview: Swagger and deterministic evaluation are available, while Partner-backed reads/execution return `403` until collaborator authentication is configured.
