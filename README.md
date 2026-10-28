@@ -1,6 +1,6 @@
 # VeriStrata AI Tools
 
-An open-source developer toolkit for evidence-aware AI workflows built on the existing VeriStrata Partner API. It provides a TypeScript SDK for all 23 Partner operations, an MCP server, deterministic corpus-integrity checks, optional isolated MariaDB persistence, Swagger documentation, and the **VeriStrata AI Tools Lab** React console.
+A private collaboration-preview toolkit for evidence-aware AI workflows built on the existing VeriStrata Partner API. It provides a TypeScript SDK for all 23 Partner operations, an MCP server, deterministic corpus-integrity checks, optional isolated MariaDB persistence, Swagger documentation, and the **VeriStrata AI Tools Lab** React console.
 
 > Status: collaboration preview. Similarity, source concentration, and narrative recurrence are discovery signals—not proof of coordination, sponsorship, origin, intent, or foreign influence.
 
