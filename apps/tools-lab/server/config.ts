@@ -1,4 +1,8 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+loadEnv({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../../.env") });
 
 export const config = {
   port: Number(process.env.TOOLS_LAB_PORT || 8787),
