@@ -9,7 +9,10 @@ export type AccessIdentity = {
   requestsPerMinute: number;
   monthlyQuota: number | null;
   requestsThisMonth: number;
+  scopes: string[];
 };
+
+export const ACCESS_SCOPES = ["tools:execute", "evaluations:run", "partner:read", "assessments:read", "diagnostics:read"] as const;
 
 const rateWindows = new Map<string, { startedAt: number; count: number }>();
 let sharedPool: Pool | null = null;
@@ -32,12 +35,15 @@ function pool() {
   return sharedPool;
 }
 
-export async function createAccessKey(input: { name: string; requestsPerMinute?: number; monthlyQuota?: number | null; expiresAt?: string | null }) {
+export async function createAccessKey(input: { name: string; requestsPerMinute?: number; monthlyQuota?: number | null; expiresAt?: string | null; scopes?: string[] }) {
+  const scopes = input.scopes || [...ACCESS_SCOPES];
+  const invalidScopes = scopes.filter((scope) => !(ACCESS_SCOPES as readonly string[]).includes(scope));
+  if (!scopes.length || invalidScopes.length) throw new Error(`Invalid access scopes: ${invalidScopes.join(", ") || "none supplied"}`);
   const rawKey = generateAccessKey();
   const keyId = randomUUID();
   await pool().execute(
-    "INSERT INTO ai_tool_access_keys (key_id, key_prefix, key_hash, name, requests_per_minute, monthly_quota, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [keyId, accessKeyPrefix(rawKey), hashAccessKey(rawKey), input.name, input.requestsPerMinute || 60, input.monthlyQuota ?? 10000, input.expiresAt || null],
+    "INSERT INTO ai_tool_access_keys (key_id, key_prefix, key_hash, name, scopes_json, requests_per_minute, monthly_quota, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    [keyId, accessKeyPrefix(rawKey), hashAccessKey(rawKey), input.name, JSON.stringify(scopes), input.requestsPerMinute || 60, input.monthlyQuota ?? 10000, input.expiresAt || null],
   );
   return { keyId, key: rawKey, prefix: accessKeyPrefix(rawKey), name: input.name };
 }
@@ -50,7 +56,7 @@ export async function revokeAccessKey(keyId: string) {
 async function findIdentity(rawKey: string): Promise<AccessIdentity | null> {
   const month = new Date().toISOString().slice(0, 7);
   const [rows] = await pool().execute(
-    `SELECT key_id, name, requests_per_minute, monthly_quota,
+    `SELECT key_id, name, scopes_json, requests_per_minute, monthly_quota,
       CASE WHEN usage_month = ? THEN requests_this_month ELSE 0 END AS requests_this_month
      FROM ai_tool_access_keys
      WHERE key_hash = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
@@ -58,7 +64,9 @@ async function findIdentity(rawKey: string): Promise<AccessIdentity | null> {
     [month, hashAccessKey(rawKey)],
   );
   const row = (rows as any[])[0];
-  return row ? { keyId: row.key_id, name: row.name, requestsPerMinute: row.requests_per_minute, monthlyQuota: row.monthly_quota, requestsThisMonth: Number(row.requests_this_month) } : null;
+  if (!row) return null;
+  const scopes = Array.isArray(row.scopes_json) ? row.scopes_json : JSON.parse(row.scopes_json || "[]");
+  return { keyId: row.key_id, name: row.name, scopes, requestsPerMinute: row.requests_per_minute, monthlyQuota: row.monthly_quota, requestsThisMonth: Number(row.requests_this_month) };
 }
 
 async function reserveMonthlyQuota(identity: AccessIdentity) {
@@ -108,4 +116,13 @@ export async function requireAiToolsKey(req: Request, res: Response, next: NextF
     res.on("finish", () => { void recordUsage(identity, req, res.statusCode, Date.now() - started).catch((error) => console.error("usage audit failed", error)); });
     next();
   } catch (error) { next(error); }
+}
+
+export function requireScope(scope: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (config.authMode === "disabled" && process.env.NODE_ENV !== "production") return next();
+    const identity = (req as Request & { accessIdentity?: AccessIdentity }).accessIdentity;
+    if (!identity?.scopes.includes(scope)) return res.status(403).json({ error: { code: "AI_TOOLS_SCOPE_REQUIRED", message: `This key requires the ${scope} scope` } });
+    next();
+  };
 }

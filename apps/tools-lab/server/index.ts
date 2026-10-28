@@ -10,7 +10,7 @@ import { PartnerClient } from "@veristrata-ai-tools/sdk";
 import { IntegrityWorkflows } from "@veristrata-ai-tools/mcp-server/workflows";
 import { config } from "./config.js";
 import { recentAssessments, saveAssessment } from "./storage.js";
-import { requireAiToolsKey } from "./accessKeys.js";
+import { requireAiToolsKey, requireScope } from "./accessKeys.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -27,14 +27,14 @@ function partner() {
 }
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "veristrata-ai-tools-lab", version: "0.1.0" }));
-app.get("/api/diagnostics", requireAiToolsKey, async (_req, res) => {
+app.get("/api/diagnostics", requireAiToolsKey, requireScope("diagnostics:read"), async (_req, res) => {
   const result = { auth: { mode: config.authMode, client_key_format: "ait_…", partner_key_exposed: false }, partner: { configured: Boolean(config.partnerApiKey), base_url: config.partnerBaseUrl, key_exposed: false }, storage: { configured: Boolean(config.database), database: config.database?.database || null }, contract: { partner_operations: 23 }, runtime: { node: process.version } };
   res.json(result);
 });
 app.get("/api/tools", (_req, res) => res.json({ tools: TOOL_CATALOG }));
-app.get("/api/assessments/recent", requireAiToolsKey, async (_req, res, next) => { try { res.json({ storage: config.database ? "live" : "not-configured", assessments: await recentAssessments() }); } catch (error) { next(error); } });
-app.post("/api/evaluations/corpus-preflight", requireAiToolsKey, (req, res) => res.json({ mode: "deterministic", result: assessCorpusPreflight(req.body.documents || []) }));
-app.post("/api/tools/:name/execute", requireAiToolsKey, async (req, res, next) => {
+app.get("/api/assessments/recent", requireAiToolsKey, requireScope("assessments:read"), async (_req, res, next) => { try { res.json({ storage: config.database ? "live" : "not-configured", assessments: await recentAssessments() }); } catch (error) { next(error); } });
+app.post("/api/evaluations/corpus-preflight", requireAiToolsKey, requireScope("evaluations:run"), (req, res) => res.json({ mode: "deterministic", result: assessCorpusPreflight(req.body.documents || []) }));
+app.post("/api/tools/:name/execute", requireAiToolsKey, requireScope("tools:execute"), async (req, res, next) => {
   try {
     const workflows = new IntegrityWorkflows(partner());
     const handlers: Record<string, (input: any) => Promise<Record<string, unknown>>> = {
@@ -51,11 +51,12 @@ app.post("/api/tools/:name/execute", requireAiToolsKey, async (req, res, next) =
 });
 
 // Explicit, read-only allowlist for console exploration; no arbitrary proxy path.
-app.get("/api/partner/topics", requireAiToolsKey, async (req, res, next) => { try { res.json(await partner().listTopics(req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "")); } catch (e) { next(e); } });
-app.get("/api/partner/topics/:topicId", requireAiToolsKey, async (req, res, next) => { try { res.json(await partner().getTopic(req.params.topicId)); } catch (e) { next(e); } });
-app.get("/api/partner/topics/:topicId/panel", requireAiToolsKey, async (req, res, next) => { try { res.json(await partner().getPanel(req.params.topicId)); } catch (e) { next(e); } });
-app.get("/api/partner/topics/:topicId/claims", requireAiToolsKey, async (req, res, next) => { try { res.json(await partner().listTopicClaims(req.params.topicId)); } catch (e) { next(e); } });
-app.get("/api/partner/claims/:claimId/evidence", requireAiToolsKey, async (req, res, next) => { try { res.json(await partner().getClaimEvidence(req.params.claimId)); } catch (e) { next(e); } });
+app.use("/api/partner", requireAiToolsKey, requireScope("partner:read"));
+app.get("/api/partner/topics", async (req, res, next) => { try { res.json(await partner().listTopics(req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "")); } catch (e) { next(e); } });
+app.get("/api/partner/topics/:topicId", async (req, res, next) => { try { res.json(await partner().getTopic(req.params.topicId)); } catch (e) { next(e); } });
+app.get("/api/partner/topics/:topicId/panel", async (req, res, next) => { try { res.json(await partner().getPanel(req.params.topicId)); } catch (e) { next(e); } });
+app.get("/api/partner/topics/:topicId/claims", async (req, res, next) => { try { res.json(await partner().listTopicClaims(req.params.topicId)); } catch (e) { next(e); } });
+app.get("/api/partner/claims/:claimId/evidence", async (req, res, next) => { try { res.json(await partner().getClaimEvidence(req.params.claimId)); } catch (e) { next(e); } });
 
 app.use((error: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const status = Number(error?.status) || 500;

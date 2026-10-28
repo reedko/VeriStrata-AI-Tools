@@ -13,6 +13,7 @@ An `ait_` key identifies and limits a client of this service. It never grants di
 - Raw keys are shown once at issuance and are never stored.
 - MariaDB stores only the SHA-256 key hash and a short display prefix.
 - Keys can be revoked or expired independently.
+- Keys carry least-privilege scopes: `tools:execute`, `evaluations:run`, `partner:read`, `assessments:read`, and `diagnostics:read`.
 - Each key has a requests-per-minute limit and optional monthly quota.
 - Privileged requests produce usage records with method, path, status, duration and request ID.
 - Production defaults to `AI_TOOLS_AUTH_MODE=required`; missing database configuration fails closed.
@@ -33,6 +34,12 @@ npm run keys -w @veristrata-ai-tools/tools-lab -- create "ASFAI collaboration pr
 ```
 
 Save the displayed `ait_...` value in an approved secret manager. The command cannot recover it later. Give the raw value only to its intended client.
+
+To issue a narrower evaluation-only key, pass a comma-separated third argument:
+
+```bash
+npm run keys -w @veristrata-ai-tools/tools-lab -- create "Evaluation runner" "evaluations:run"
+```
 
 Revoke a key using its non-secret key ID:
 

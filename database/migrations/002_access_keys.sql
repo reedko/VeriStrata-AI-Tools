@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS ai_tool_access_keys (
   key_prefix VARCHAR(24) NOT NULL,
   key_hash CHAR(64) NOT NULL UNIQUE,
   name VARCHAR(255) NOT NULL,
+  scopes_json JSON NOT NULL,
   status ENUM('active', 'revoked') NOT NULL DEFAULT 'active',
   requests_per_minute INT UNSIGNED NOT NULL DEFAULT 60,
   monthly_quota INT UNSIGNED NULL DEFAULT 10000,

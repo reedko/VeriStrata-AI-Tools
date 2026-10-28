@@ -1,10 +1,10 @@
 import "dotenv/config";
 import { createAccessKey, revokeAccessKey } from "./accessKeys.js";
 
-const [command, argument] = process.argv.slice(2);
+const [command, argument, scopeArgument] = process.argv.slice(2);
 if (command === "create") {
   if (!argument) throw new Error("Usage: npm run keys -- create <name>");
-  const result = await createAccessKey({ name: argument });
+  const result = await createAccessKey({ name: argument, ...(scopeArgument ? { scopes: scopeArgument.split(",").map((scope) => scope.trim()).filter(Boolean) } : {}) });
   console.log("Save this key now; it cannot be recovered later:");
   console.log(result.key);
   console.log(`key_id=${result.keyId} prefix=${result.prefix}`);
