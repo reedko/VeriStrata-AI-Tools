@@ -6,4 +6,6 @@ The Lab API intentionally exposes only named routes. It is not an arbitrary reve
 
 Corpus and narrative signals are diagnostic observations. Never use them alone to identify an actor, label content as propaganda, infer nationality, or take automated punitive action. Retain provenance and human review.
 
+The hosted pilot accepts text only: no arbitrary source URLs or platform content IDs. Document screening is capped at 5,000 characters; narrative trace at three texts/10,000 total characters; corpus assessment at five documents/15,000 total characters; and bounded waiting at 15 seconds. Keys additionally enforce a monthly investigation allowance and one concurrent investigation by default.
+
 Report vulnerabilities privately to the VeriStrata maintainers rather than opening a public issue containing exploit details or secrets.

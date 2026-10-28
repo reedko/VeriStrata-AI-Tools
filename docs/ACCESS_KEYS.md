@@ -15,6 +15,7 @@ An `ait_` key identifies and limits a client of this service. It never grants di
 - Keys can be revoked or expired independently.
 - Keys carry least-privilege scopes: `tools:execute`, `evaluations:run`, `partner:read`, `assessments:read`, and `diagnostics:read`.
 - Each key has a requests-per-minute limit and optional monthly quota.
+- Billable tool execution has a separate monthly investigation allowance and concurrency limit.
 - Privileged requests produce usage records with method, path, status, duration and request ID.
 - Production defaults to `AI_TOOLS_AUTH_MODE=required`; missing database configuration fails closed.
 - Local development may explicitly use `AI_TOOLS_AUTH_MODE=disabled`. Production ignores that bypass.
@@ -30,15 +31,18 @@ npm run db:migrate
 Create a client key:
 
 ```bash
-npm run keys -w @veristrata-ai-tools/tools-lab -- create "ASFAI collaboration preview"
+npm run keys -w @veristrata-ai-tools/tools-lab -- create "ASFAI collaboration preview" \
+  --scopes=tools:execute,diagnostics:read \
+  --tools=corpus_assess \
+  --expires-days=30 --rpm=10 --monthly=100 --investigations=10 --concurrent=1
 ```
 
 Save the displayed `ait_...` value in an approved secret manager. The command cannot recover it later. Give the raw value only to its intended client.
 
-To issue a narrower evaluation-only key, pass a comma-separated third argument:
+To issue a narrower evaluation-only key:
 
 ```bash
-npm run keys -w @veristrata-ai-tools/tools-lab -- create "Evaluation runner" "evaluations:run"
+npm run keys -w @veristrata-ai-tools/tools-lab -- create "Evaluation runner" --scopes=evaluations:run
 ```
 
 Revoke a key using its non-secret key ID:

@@ -33,7 +33,11 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, additionalProperties: true }
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/DocumentScreenInput'
+                - $ref: '#/components/schemas/NarrativeTraceInput'
+                - $ref: '#/components/schemas/CorpusAssessInput'
       responses:
         '200': { description: Structured workflow result }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -74,13 +78,47 @@ components:
     Unauthorized:
       description: Missing, invalid, expired, or revoked AI Tools key
   schemas:
+    DocumentScreenInput:
+      type: object
+      additionalProperties: false
+      required: [focus, text]
+      properties:
+        focus: { type: string, minLength: 10, maxLength: 255 }
+        title: { type: string, maxLength: 255 }
+        text: { type: string, minLength: 10, maxLength: 5000 }
+        wait_seconds: { type: integer, minimum: 0, maximum: 15, default: 10 }
+    NarrativeTraceInput:
+      type: object
+      additionalProperties: false
+      required: [assertion, source_texts]
+      properties:
+        assertion: { type: string, minLength: 10, maxLength: 255 }
+        source_texts:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items: { type: string, minLength: 10, maxLength: 5000 }
+        geography: { type: string, maxLength: 255 }
+        wait_seconds: { type: integer, minimum: 0, maximum: 15, default: 10 }
+    CorpusAssessInput:
+      type: object
+      additionalProperties: false
+      required: [documents]
+      properties:
+        focus: { type: string, minLength: 10, maxLength: 255 }
+        title: { type: string, maxLength: 255 }
+        documents:
+          type: array
+          minItems: 2
+          maxItems: 5
+          items: { $ref: '#/components/schemas/CorpusDocument' }
+        wait_seconds: { type: integer, minimum: 0, maximum: 15, default: 10 }
     CorpusDocument:
       type: object
-      required: [document_id]
+      required: [document_id, text]
       properties:
         document_id: { type: string, maxLength: 128 }
         title: { type: string, maxLength: 255 }
-        url: { type: string, format: uri }
-        text: { type: string, maxLength: 20000 }
+        text: { type: string, minLength: 10, maxLength: 5000 }
 security:
   - aiToolsKey: []
