@@ -2,6 +2,8 @@
 
 This profile matches the current production VPS conventions: Nginx, PM2, and an application process bound to localhost. The Lab, Swagger, health, and tool catalog are public. All other API routes require an application-validated `ait_` key in production.
 
+The checked-in Nginx profile also applies per-IP limits to public metadata routes and stricter limits to `/api/`, including invalid-key traffic. If a trusted CDN or load balancer sits in front of Nginx, configure and verify the appropriate real-client-IP module before relying on `$binary_remote_addr` for enforcement.
+
 ## First deployment
 
 1. Point `tools.veristrata.ai` to the VPS public IP.

@@ -15,7 +15,7 @@ Internet -> TLS reverse proxy -> static Lab + public /swagger
 - Bind Node to `127.0.0.1`; expose only the TLS reverse proxy.
 - Publicly serve `/swagger/`, static assets, `/api/health`, and the tool catalog.
 - Require application-validated `ait_` keys for deterministic preflight, live tool execution, Partner reads, recent assessments, and detailed diagnostics. Cloudflare Access or OAuth can add a human-access layer.
-- Add per-IP/user rate limits and retain request-size limits.
+- Retain and tune the checked-in per-IP Nginx limits and request-size limits. When a trusted proxy sits in front of Nginx, verify real-client-IP handling before relying on IP enforcement.
 - Never expose `VERISTRATA_API_KEY` in Vite variables, browser runtime config, logs, or GitHub Actions.
 - Use a separate least-privilege MariaDB user restricted to `veristrata_ai_tools.*`.
 

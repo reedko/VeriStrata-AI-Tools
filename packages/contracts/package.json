@@ -1,6 +1,7 @@
 {
   "name": "@veristrata-ai-tools/contracts",
   "version": "0.1.0",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "exports": { "./partner-openapi.yaml": "./openapi/partner-openapi.yaml", "./catalog": "./dist/catalog.js" },
   "files": ["openapi", "dist"],

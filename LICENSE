@@ -1,3 +1,6 @@
+Except for `packages/contracts/openapi/partner-openapi.yaml`, which is governed
+by `LICENSES/VERISTRATA-PARTNER-API-CONTRACT.md`, the following license applies:
+
 MIT License
 
 Copyright (c) 2026 VeriStrata

@@ -31,7 +31,7 @@ npm run db:migrate
 Create a client key:
 
 ```bash
-npm run keys -w @veristrata-ai-tools/tools-lab -- create "ASFAI collaboration preview" \
+npm run keys -w @veristrata-ai-tools/tools-lab -- create "Pilot collaborator" \
   --scopes=tools:execute,diagnostics:read \
   --tools=corpus_assess \
   --expires-days=30 --rpm=10 --monthly=100 --investigations=10 --concurrent=1

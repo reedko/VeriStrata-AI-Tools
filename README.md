@@ -1,13 +1,19 @@
 # VeriStrata AI Tools
 
-A private collaboration-preview toolkit for evidence-aware AI workflows built on the existing VeriStrata Partner API. It provides a TypeScript SDK for all 23 Partner operations, an MCP server, deterministic corpus-integrity checks, optional isolated MariaDB persistence, Swagger documentation, and the **VeriStrata AI Tools Lab** React console.
+An open-source collaboration-preview toolkit for evidence-aware AI workflows built on the VeriStrata Partner API. It provides a TypeScript SDK for all 23 Partner operations, an MCP server, deterministic corpus-integrity checks, optional isolated MariaDB persistence, Swagger documentation, and the **VeriStrata AI Tools Lab** React console.
 
 > Status: collaboration preview. Similarity, source concentration, and narrative recurrence are discovery signals—not proof of coordination, sponsorship, origin, intent, or foreign influence.
 
+## Open-source boundary
+
+The toolkit code, MCP server, SDK, deterministic checks, examples, and Lab are released under the MIT License. The hosted VeriStrata service, private platform implementation, credentials, customer investigations, and operational data are not included.
+
+The Partner OpenAPI document is included as separately licensed interoperability documentation and is excluded from the repository-wide MIT grant. See [the Partner contract notice](LICENSES/VERISTRATA-PARTNER-API-CONTRACT.md). Running the hosted workflows requires an authorized Partner service credential; publishing or cloning this repository does not provide one.
+
 ## What is included
 
-- `document_screen`: frames an evidence-backed inquiry around text, a URL, or a content reference.
-- `narrative_trace`: examines evidence, contradictions, and possible lineage without assuming attribution.
+- `document_screen`: frames an evidence-backed inquiry around a bounded text sample.
+- `narrative_trace`: frames an inquiry across bounded source texts without assuming attribution.
 - `corpus_assess`: detects exact/near duplication and domain concentration, then starts a Partner inquiry.
 - Complete 23-operation TypeScript Partner client.
 - MCP v2 stdio server for use by any compatible model host.
@@ -53,8 +59,8 @@ examples/                Model-host and workflow examples
 
 The Partner API stores registered URL/text sources, but current topic preparation frames claims from the topic title. Full source-aware extraction, document-level provenance, and cross-source transmission reconstruction require a reviewed extension to the canonical platform pipeline. This repository does not create a second evidence pipeline.
 
-See [CURRENT_STATE_AUDIT.md](docs/architecture/CURRENT_STATE_AUDIT.md), [RUNBOOK.md](docs/RUNBOOK.md), and [PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md).
+See [PUBLIC_ARCHITECTURE.md](docs/architecture/PUBLIC_ARCHITECTURE.md), [RUNBOOK.md](docs/RUNBOOK.md), and [PRODUCTION_DEPLOYMENT.md](docs/PRODUCTION_DEPLOYMENT.md).
 
-## License
+## Contributing and license
 
-MIT. The VeriStrata service and private platform are separate products; this repository contains only the public Partner contract and new integration code.
+Contributions are welcome; start with [CONTRIBUTING.md](CONTRIBUTING.md). Toolkit code is MIT licensed. The Partner OpenAPI document has a separate proprietary interoperability notice, and the hosted VeriStrata service and private platform remain separate products.
