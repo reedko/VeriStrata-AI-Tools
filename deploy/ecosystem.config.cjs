@@ -8,8 +8,7 @@ module.exports = {
     env: {
       NODE_ENV: "production",
       TOOLS_LAB_PORT: "8791",
-      AI_TOOLS_AUTH_MODE: "required",
-      VERISTRATA_BASE_URL: "http://127.0.0.1:3000/api/v1/partner"
+      AI_TOOLS_AUTH_MODE: "required"
     },
     autorestart: true,
     max_restarts: 10,
