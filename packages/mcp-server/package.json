@@ -1,0 +1,17 @@
+{
+  "name": "@veristrata-ai-tools/mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "veristrata-ai-tools-mcp": "dist/index.js" },
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "exports": { ".": "./dist/server.js", "./workflows": "./dist/workflows.js" },
+  "scripts": { "build": "tsc -p tsconfig.json", "test": "node --test dist/**/*.test.js", "start": "node dist/index.js" },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
+    "@veristrata-ai-tools/integrity-core": "0.1.0",
+    "@veristrata-ai-tools/sdk": "0.1.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": { "@types/node": "^22.10.2", "typescript": "^5.7.3" }
+}

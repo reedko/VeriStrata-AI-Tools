@@ -1,0 +1,8 @@
+{
+  "focus": "Does this corpus provide genuinely independent corroboration?",
+  "documents": [
+    { "document_id": "one", "url": "https://example.org/a", "text": "A sufficiently detailed sample passage for deterministic comparison." },
+    { "document_id": "two", "url": "https://example.org/b", "text": "A sufficiently detailed sample passage for deterministic comparison." }
+  ],
+  "wait_seconds": 0
+}

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "veristrata-ai-tools": {
+      "command": "node",
+      "args": ["/absolute/path/to/VeriStrata-AI-Tools/packages/mcp-server/dist/index.js"],
+      "env": {
+        "VERISTRATA_BASE_URL": "http://127.0.0.1:3000/api/v1/partner",
+        "VERISTRATA_API_KEY": "vsk_replace_me"
+      }
+    }
+  }
+}

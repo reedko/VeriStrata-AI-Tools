@@ -1,0 +1,9 @@
+{
+  "name": "@veristrata-ai-tools/contracts",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": { "./partner-openapi.yaml": "./openapi/partner-openapi.yaml", "./catalog": "./dist/catalog.js" },
+  "files": ["openapi", "dist"],
+  "scripts": { "build": "tsc -p tsconfig.json", "test": "node --test dist/**/*.test.js" },
+  "devDependencies": { "typescript": "^5.7.3" }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "veristrata-ai-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build -w @veristrata-ai-tools/contracts && npm run build -w @veristrata-ai-tools/sdk && npm run build -w @veristrata-ai-tools/integrity-core && npm run build -w @veristrata-ai-tools/mcp-server && npm run build -w @veristrata-ai-tools/tools-lab",
+    "test": "npm run test -w @veristrata-ai-tools/contracts && npm run test -w @veristrata-ai-tools/sdk && npm run test -w @veristrata-ai-tools/integrity-core && npm run test -w @veristrata-ai-tools/mcp-server && npm run test -w @veristrata-ai-tools/tools-lab",
+    "dev": "npm run dev -w @veristrata-ai-tools/tools-lab",
+    "start": "npm run start -w @veristrata-ai-tools/tools-lab",
+    "mcp": "npm run start -w @veristrata-ai-tools/mcp-server",
+    "db:migrate": "npm run db:migrate -w @veristrata-ai-tools/tools-lab"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}
