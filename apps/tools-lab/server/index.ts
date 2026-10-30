@@ -4,6 +4,7 @@ import YAML from "yaml";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { createHash } from "node:crypto";
 import { TOOL_CATALOG } from "@veristrata-ai-tools/contracts/catalog";
 import { assessCorpusPreflight } from "@veristrata-ai-tools/integrity-core";
 import { PartnerClient } from "@veristrata-ai-tools/sdk";
@@ -27,6 +28,31 @@ function partner() {
   return new PartnerClient(config.partnerBaseUrl, config.partnerApiKey);
 }
 
+async function optionalPartnerRead<T>(read: () => Promise<T>): Promise<T | null> {
+  try { return await read(); }
+  catch (error: any) {
+    if ([404, 409].includes(Number(error?.status))) return null;
+    throw error;
+  }
+}
+
+async function caseSnapshot(assessment: Awaited<ReturnType<typeof getAssessment>>) {
+  if (!assessment?.partner_topic_id) return { assessment, topic: null, workspace: null, evidence_review: null, panel: null };
+  const client = partner();
+  const topicId = assessment.partner_topic_id;
+  const [topic, workspace, evidenceReview, panel] = await Promise.all([
+    client.getTopic(topicId),
+    optionalPartnerRead(() => client.getReviewWorkspace(topicId)),
+    optionalPartnerRead(() => client.getEvidenceReview(topicId)),
+    optionalPartnerRead(() => client.getPanel(topicId)),
+  ]);
+  return { assessment, topic, workspace, evidence_review: evidenceReview, panel };
+}
+
+async function ownedCase(req: express.Request) {
+  return getAssessment(accessIdentity(req)!.keyId, req.params.assessmentId);
+}
+
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "veristrata-ai-tools-lab", version: "0.1.0" }));
 app.get("/api/diagnostics", requireAiToolsKey, requireScope("diagnostics:read"), async (_req, res) => {
   const result = { auth: { mode: config.authMode, client_key_format: "ait_…", partner_key_exposed: false }, partner: { configured: Boolean(config.partnerApiKey), base_url: config.partnerBaseUrl, key_exposed: false }, storage: { configured: Boolean(config.database), database: config.database?.database || null }, contract: { partner_operations: 23 }, runtime: { node: process.version } };
@@ -38,17 +64,65 @@ app.get("/api/assessments/:assessmentId", requireAiToolsKey, requireScope("asses
   try {
     const assessment = await getAssessment(accessIdentity(req)!.keyId, req.params.assessmentId);
     if (!assessment) return res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Assessment not found" } });
-    let evidence = null;
-    if (assessment.partner_topic_id) {
-      const client = partner();
-      const [topic, panel, claims] = await Promise.all([
-        client.getTopic(assessment.partner_topic_id),
-        client.getPanel(assessment.partner_topic_id),
-        client.listTopicClaims(assessment.partner_topic_id),
-      ]);
-      evidence = { topic, panel, claims };
+    res.json(await caseSnapshot(assessment));
+  } catch (error) { next(error); }
+});
+app.post("/api/cases", requireAiToolsKey, requireScope("tools:execute"), requireInvestigationBudget, async (req, res, next) => {
+  try {
+    const inquiry = typeof req.body?.inquiry === "string" ? req.body.inquiry.replace(/\s+/g, " ").trim() : "";
+    if (inquiry.length < 10 || inquiry.length > 1000) return res.status(400).json({ error: { code: "INVALID_INQUIRY", message: "Enter an inquiry between 10 and 1,000 characters" } });
+    const clientIdentity = accessIdentity(req)!;
+    const client = partner();
+    const topic = await client.createTopic({
+      title: inquiry.length <= 255 ? inquiry : `${inquiry.slice(0, 252)}...`,
+      description: "AI Tools inquiry prepared for human hypothesis and evidence review.",
+      partner_external_id: `asfai-inquiry-${createHash("sha256").update(`${clientIdentity.keyId}:${inquiry}`).digest("hex").slice(0, 24)}`,
+    });
+    let job = await client.prepareTopic(topic.topic_id);
+    const deadline = Date.now() + 15_000;
+    while (["queued", "running"].includes(job.status) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      job = await client.getJob(topic.topic_id, job.job_id);
     }
-    res.json({ assessment, evidence });
+    const workspace = job.status === "completed" ? await client.getReviewWorkspace(topic.topic_id) : null;
+    const result = { assessment_kind: "inquiry_case", topic, job, workspace };
+    const assessmentId = await saveAssessment(clientIdentity.keyId, "inquiry_case", { inquiry }, result);
+    const assessment = assessmentId ? await getAssessment(clientIdentity.keyId, assessmentId) : null;
+    res.status(201).json(await caseSnapshot(assessment));
+  } catch (error) { next(error); }
+});
+app.get("/api/cases/:assessmentId", requireAiToolsKey, requireScope("assessments:read"), async (req, res, next) => {
+  try {
+    const assessment = await ownedCase(req);
+    if (!assessment) return res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Case not found" } });
+    res.json(await caseSnapshot(assessment));
+  } catch (error) { next(error); }
+});
+app.post("/api/cases/:assessmentId/evidence-start", requireAiToolsKey, requireScope("tools:execute"), async (req, res, next) => {
+  try {
+    const assessment = await ownedCase(req);
+    if (!assessment?.partner_topic_id) return res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Case not found" } });
+    const selections = Array.isArray(req.body?.selections) ? req.body.selections : [];
+    if (!selections.length) return res.status(400).json({ error: { code: "SELECTION_REQUIRED", message: "Select at least one hypothesis" } });
+    await partner().startSelectedEvidence(assessment.partner_topic_id, { selections });
+    res.status(202).json(await caseSnapshot(assessment));
+  } catch (error) { next(error); }
+});
+app.post("/api/cases/:assessmentId/evidence/:relationshipId/review", requireAiToolsKey, requireScope("tools:execute"), async (req, res, next) => {
+  try {
+    const assessment = await ownedCase(req);
+    if (!assessment?.partner_topic_id) return res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Case not found" } });
+    if (!["approve", "reject"].includes(req.body?.action)) return res.status(400).json({ error: { code: "INVALID_REVIEW", message: "Choose approve or reject" } });
+    await partner().reviewEvidenceRelationship(assessment.partner_topic_id, req.params.relationshipId, { action: req.body.action, ...(req.body?.reason ? { reason: req.body.reason } : {}) });
+    res.json(await caseSnapshot(assessment));
+  } catch (error) { next(error); }
+});
+app.post("/api/cases/:assessmentId/finish", requireAiToolsKey, requireScope("tools:execute"), async (req, res, next) => {
+  try {
+    const assessment = await ownedCase(req);
+    if (!assessment?.partner_topic_id) return res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Case not found" } });
+    await partner().finishEvidenceReview(assessment.partner_topic_id);
+    res.json(await caseSnapshot(assessment));
   } catch (error) { next(error); }
 });
 app.post("/api/evaluations/corpus-preflight", requireAiToolsKey, requireScope("evaluations:run"), (req, res) => res.json({ mode: "deterministic", result: assessCorpusPreflight(req.body.documents || []) }));

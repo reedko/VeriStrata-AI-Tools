@@ -79,7 +79,94 @@ paths:
         '200': { description: Owned assessment with stored inputs/results and live evidence snapshot }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { description: Assessment not found for this client }
+  /cases:
+    post:
+      operationId: createGuidedCase
+      summary: Start a guided inquiry and prepare hypotheses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [inquiry]
+              properties:
+                inquiry: { type: string, minLength: 10, maxLength: 1000 }
+      responses:
+        '201': { description: Owned case with preparation state }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /cases/{assessmentId}:
+    get:
+      operationId: getGuidedCase
+      parameters:
+        - { $ref: '#/components/parameters/AssessmentId' }
+      responses:
+        '200': { description: Current hypotheses, evidence review, panel, and VeriMeter state }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Case not found for this client }
+  /cases/{assessmentId}/evidence-start:
+    post:
+      operationId: startGuidedCaseEvidence
+      parameters:
+        - { $ref: '#/components/parameters/AssessmentId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [selections]
+              properties:
+                selections:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [hypothesis_id, text]
+                    properties:
+                      hypothesis_id: { type: string }
+                      text: { type: string }
+      responses:
+        '202': { description: Evidence collection queued }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /cases/{assessmentId}/evidence/{relationshipId}/review:
+    post:
+      operationId: reviewGuidedCaseEvidence
+      parameters:
+        - { $ref: '#/components/parameters/AssessmentId' }
+        - in: path
+          name: relationshipId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [approve, reject] }
+                reason: { type: string }
+      responses:
+        '200': { description: Evidence decision applied and case refreshed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /cases/{assessmentId}/finish:
+    post:
+      operationId: finishGuidedCase
+      parameters:
+        - { $ref: '#/components/parameters/AssessmentId' }
+      responses:
+        '200': { description: Review published with final panel and VeriMeter }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 components:
+  parameters:
+    AssessmentId:
+      in: path
+      name: assessmentId
+      required: true
+      schema: { type: string, format: uuid }
   securitySchemes:
     aiToolsKey:
       type: http
