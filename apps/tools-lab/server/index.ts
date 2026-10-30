@@ -9,7 +9,7 @@ import { assessCorpusPreflight } from "@veristrata-ai-tools/integrity-core";
 import { PartnerClient } from "@veristrata-ai-tools/sdk";
 import { IntegrityWorkflows } from "@veristrata-ai-tools/mcp-server/workflows";
 import { config } from "./config.js";
-import { ownsTopic, recentAssessments, saveAssessment } from "./storage.js";
+import { getAssessment, ownsTopic, recentAssessments, saveAssessment } from "./storage.js";
 import { accessIdentity, requireAiToolsKey, requireInvestigationBudget, requireScope, requireToolAccess } from "./accessKeys.js";
 import { parseToolInput } from "./validation.js";
 
@@ -34,6 +34,23 @@ app.get("/api/diagnostics", requireAiToolsKey, requireScope("diagnostics:read"),
 });
 app.get("/api/tools", (_req, res) => res.json({ tools: TOOL_CATALOG }));
 app.get("/api/assessments/recent", requireAiToolsKey, requireScope("assessments:read"), async (req, res, next) => { try { res.json({ storage: config.database ? "live" : "not-configured", assessments: await recentAssessments(accessIdentity(req)?.keyId || null) }); } catch (error) { next(error); } });
+app.get("/api/assessments/:assessmentId", requireAiToolsKey, requireScope("assessments:read"), async (req, res, next) => {
+  try {
+    const assessment = await getAssessment(accessIdentity(req)!.keyId, req.params.assessmentId);
+    if (!assessment) return res.status(404).json({ error: { code: "RESOURCE_NOT_FOUND", message: "Assessment not found" } });
+    let evidence = null;
+    if (assessment.partner_topic_id) {
+      const client = partner();
+      const [topic, panel, claims] = await Promise.all([
+        client.getTopic(assessment.partner_topic_id),
+        client.getPanel(assessment.partner_topic_id),
+        client.listTopicClaims(assessment.partner_topic_id),
+      ]);
+      evidence = { topic, panel, claims };
+    }
+    res.json({ assessment, evidence });
+  } catch (error) { next(error); }
+});
 app.post("/api/evaluations/corpus-preflight", requireAiToolsKey, requireScope("evaluations:run"), (req, res) => res.json({ mode: "deterministic", result: assessCorpusPreflight(req.body.documents || []) }));
 function validateToolRequest(req: express.Request, _res: express.Response, next: express.NextFunction) {
   try { req.body = parseToolInput(req.params.name, req.body); next(); } catch (error) { next(error); }

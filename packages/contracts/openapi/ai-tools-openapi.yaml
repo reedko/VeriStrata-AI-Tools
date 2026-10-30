@@ -65,8 +65,20 @@ paths:
     get:
       operationId: listRecentAssessments
       responses:
-        '200': { description: Recent assessments visible to the service }
+        '200': { description: Recent assessments owned by the authenticated AI Tools client }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /assessments/{assessmentId}:
+    get:
+      operationId: getAssessmentReview
+      parameters:
+        - in: path
+          name: assessmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Owned assessment with stored inputs/results and live evidence snapshot }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Assessment not found for this client }
 components:
   securitySchemes:
     aiToolsKey:

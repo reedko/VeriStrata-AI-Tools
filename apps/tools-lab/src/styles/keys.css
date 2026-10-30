@@ -22,3 +22,25 @@
 .access-bar button { margin:0; padding:8px 11px; }
 .status-dot.off { background:#667b80; box-shadow:none; }
 @media(max-width:980px){.access-bar{margin:14px 20px 0;align-items:stretch;flex-direction:column}.access-bar>div{justify-content:space-between}.access-bar input{width:100%}}
+
+.assessment-list { display:grid; gap:14px; grid-template-columns:1fr; }
+.assessment-list .card { min-height:0; }
+.assessment-list .card h3 { font-family:"SFMono-Regular",Consolas,monospace; }
+
+.inquiry-workbench { margin-bottom:18px; }
+.inquiry-workbench textarea { min-height:0; }
+.inquiry-question { height:110px; }
+.inquiry-source { height:220px; }
+.inquiry-input { width:100%; margin-bottom:16px; }
+.field-label span { color:var(--muted); font-weight:400; }
+.review-status { display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+.review-status strong { color:#efffff; font-size:18px; }
+.review-summary section { margin-top:20px; }
+.review-summary section h3 { font-size:14px; color:#bfe6e8; }
+.review-items { display:grid; gap:10px; }
+.review-items article { padding:14px; border:1px solid var(--line); border-radius:9px; background:#071c24; }
+.review-items article span { color:var(--aqua); font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.review-items article p { margin:8px 0 0; color:#d9ebed; line-height:1.5; }
+.review-summary details { margin-top:20px; }
+.review-summary summary { color:var(--muted); cursor:pointer; font-size:12px; }
+.review-summary details .json { margin-top:10px; }
